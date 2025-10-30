@@ -1,0 +1,667 @@
+---
+title: "STAT 601 – Homework 7"
+author: "Julius Hai"
+date: "`r format(Sys.Date(), '%B %d, %Y')`"
+output:
+  word_document:
+    toc: true
+  pdf_document:
+    toc: true
+    number_sections: true
+    latex_engine: xelatex
+fontsize: 12pt
+geometry: margin=1in
+link-citations: true
+---
+
+
+```{r}
+knitr::opts_chunk$set(
+  echo = TRUE,          # show the R code
+  warning = FALSE,
+  message = FALSE,
+  fig.width = 6,
+  fig.height = 4,
+  fig.align = "center"
+)
+
+```
+Q1
+```{r}
+#  Appropriate Assumptions 
+
+# ============================================
+
+# --- Load required package ---
+
+# install.packages("car")   # Uncomment if not installed
+
+library(car)
+
+# --- Read or define your data ---
+
+# Example: If you already have your dataset file
+# df <- read.csv("concrete_sand_strength.csv")
+
+# --- Define dataset cleanly ---
+df <- data.frame(
+  Percent_Sand = factor(rep(c("10%", "15%", "20%", "25%", "30%"), each = 5)),
+  Compression_Resistance = c(
+    3100, 3200, 3150, 3250, 3180,   # 10%
+    3300, 3350, 3320, 3400, 3370,   # 15%
+    3450, 3480, 3500, 3470, 3520,   # 20%
+    3400, 3380, 3360, 3420, 3390,   # 25%
+    3280, 3300, 3260, 3290, 3310    # 30%
+  )
+)
+
+# Confirm structure
+str(df)
+
+# --- Fit the ANOVA model ---
+anova_model <- aov(Compression_Resistance ~ Percent_Sand, data = df)
+
+# ======================================================
+# CHECKING THE THREE ANOVA ASSUMPTIONS (NO PLOTS REQUIRED)
+# ======================================================
+
+# 1️⃣ Independence of Observations
+# This is a design assumption — it must be ensured by how data were collected.
+# (No statistical test for this in R.)
+
+# 2️⃣ Normality of Residuals (Shapiro–Wilk Test)
+shapiro.test(residuals(anova_model))
+
+# 3️⃣ Homogeneity of Variances (Levene’s Test)
+leveneTest(Compression_Resistance ~ Percent_Sand, data = df, center = median)
+```
+Q1b
+```{r}
+# Appropriate Test for the Problem
+# One-Way ANOVA (F-test)
+# ============================================
+
+# --- Load packages ---
+# install.packages("car")   # if not yet installed
+library(car)
+
+# --- Import or create dataset ---
+# Ensure you have a dataframe called df with these columns:
+#   Percent_Sand: categorical (factor)
+#   Compression_Resistance: numeric (continuous)
+
+# Example (you can replace this with your own data import)
+# df <- read.csv("concrete_sand_strength.csv", stringsAsFactors = TRUE)
+
+# If you already created 'df' earlier (from Q1a), just make sure:
+df$Percent_Sand <- factor(df$Percent_Sand)
+
+# --- Fit the one-way ANOVA model ---
+anova_model <- aov(Compression_Resistance ~ Percent_Sand, data = df)
+
+# --- Display ANOVA table (F-test result) ---
+summary(anova_model)
+
+# --- Optional: view model diagnostics summary ---
+# (This is not required in Q1b but helps confirm results)
+model.tables(anova_model, type = "means")
+
+# --- Interpretation guide ---
+# The summary output provides:
+# - Df: degrees of freedom
+# - Sum Sq: sum of squares for factor and residuals
+# - Mean Sq: mean square values
+# - F value: F-statistic
+# - Pr(>F): p-value
+#
+# Decision rule:
+# If p-value < 0.05 → Reject H0 → Mean compression strength differs
+# If p-value ≥ 0.05 → Fail to reject H0 → No significant mean difference
+```
+1c
+```{r}
+# Hypothesis Test (One-Way ANOVA)
+
+#   contentReference[oaicite:0]{index=0}
+
+# ============================================
+
+# --- Data prep (ensure your data frame 'df' exists) ---
+
+# It must contain:
+# df$Percent_Sand (factor with 5 levels)
+# df$Compression_Resistance (numeric)
+
+# Example loader (replace with your file as needed):
+# df <- read.csv("concrete_sand_strength.csv", stringsAsFactors = TRUE)
+
+# Make sure the group variable is a factor
+df$Percent_Sand <- factor(df$Percent_Sand)
+
+# --- Fit one-way ANOVA corresponding to the hypotheses ---
+fit <- aov(Compression_Resistance ~ Percent_Sand, data = df)
+
+# --- Print the hypothesis test with correct notation ---
+cat("\nMODEL:\n")
+cat("  Y_ij = μ + τ_i + ε_ij,   with  ε_ij ~ N(0, σ^2)\n")
+cat("  i = 1,…,5 (sand levels),  j = 1,…,n_i\n\n")
+
+cat("HYPOTHESES:\n")
+cat("  H0: μ1 = μ2 = μ3 = μ4 = μ5   (all group means equal)\n")
+cat("      Equivalently: τ1 = τ2 = τ3 = τ4 = τ5 = 0\n")
+cat("  Ha: ∃ i ≠ j such that μ_i ≠ μ_j   (at least one mean differs)\n\n")
+
+# --- Perform the F-test and display ANOVA table ---
+cat("ANOVA TABLE (F-test corresponding to H0 vs Ha):\n")
+print(summary(fit))
+
+# --- Optional: pull F and p for quick reporting ---
+aov_tab <- summary(fit)[[1]]
+F_stat  <- aov_tab[["F value"]][1]
+p_val   <- aov_tab[["Pr(>F)"]][1]
+alpha   <- 0.05
+
+cat(sprintf("\nTest statistic: F = %.4f,  p-value = %.4g,  alpha = %.2f\n",
+            F_stat, p_val, alpha))
+cat(ifelse(p_val < alpha,
+          "Decision: Reject H0 → At least one mean differs among sand levels.\n",
+          "Decision: Fail to reject H0 → No evidence of mean differences.\n"))
+```
+1d
+```{r}
+#  Conduct the Test Using R
+
+# One-Way ANOVA: Effect of Sand Content on Compression Resistance
+
+# ============================================
+
+# --- Load packages ---
+
+# install.packages("car")     # run once if not installed
+library(car)
+
+# --- Import or define your dataset ---
+
+# Replace this with your actual data or CSV file
+
+# Example dataset (5 sand levels, 5 samples each)
+df <- data.frame(
+  Percent_Sand = factor(rep(c("10%", "15%", "20%", "25%", "30%"), each = 5)),
+  Compression_Resistance = c(
+    3100, 3200, 3150, 3250, 3180,   # 10%
+    3300, 3350, 3320, 3400, 3370,   # 15%
+    3450, 3480, 3500, 3470, 3520,   # 20%
+    3400, 3380, 3360, 3420, 3390,   # 25%
+    3280, 3300, 3260, 3290, 3310    # 30%
+  )
+)
+
+# --- Fit ANOVA model ---
+anova_model <- aov(Compression_Resistance ~ Percent_Sand, data = df)
+
+# --- Display ANOVA summary table (F-test results) ---
+summary(anova_model)
+
+# --- Optional: get mean comparison table ---
+model.tables(anova_model, type = "means")
+
+# --- Extract F-statistic and p-value for reporting ---
+aov_table <- summary(anova_model)[[1]]
+F_value   <- aov_table[["F value"]][1]
+p_value   <- aov_table[["Pr(>F)"]][1]
+
+cat("\n============================================\n")
+cat("ANOVA Test Result:\n")
+cat(sprintf("F = %.3f,  p-value = %.4f\n", F_value, p_value))
+cat("Significance Level (alpha) = 0.05\n")
+if (p_value < 0.05) {
+  cat("Conclusion: Reject H0 → Sand content significantly affects compression resistance.\n")
+} else {
+  cat("Conclusion: Fail to reject H0 → No significant difference among sand levels.\n")
+}
+cat("============================================\n")
+```
+1e
+```{r}
+#  Interpretation of ANOVA Results
+# contentReference[oaicite:0]{index=0}
+# ============================================
+
+# --- Load package ---
+# install.packages("car")   # Uncomment if needed
+library(car)
+
+# --- Example dataset (replace with your own or import CSV) ---
+df <- data.frame(
+  Percent_Sand = factor(rep(c("10%", "15%", "20%", "25%", "30%"), each = 5)),
+  Compression_Resistance = c(
+    3100, 3200, 3150, 3250, 3180,   # 10%
+    3300, 3350, 3320, 3400, 3370,   # 15%
+    3450, 3480, 3500, 3470, 3520,   # 20%
+    3400, 3380, 3360, 3420, 3390,   # 25%
+    3280, 3300, 3260, 3290, 3310    # 30%
+  )
+)
+
+# --- Fit the ANOVA model ---
+anova_model <- aov(Compression_Resistance ~ Percent_Sand, data = df)
+
+# --- Display ANOVA summary (main result) ---
+summary(anova_model)
+
+# --- Extract key test values ---
+aov_table <- summary(anova_model)[[1]]
+F_value   <- aov_table[["F value"]][1]
+p_value   <- aov_table[["Pr(>F)"]][1]
+alpha     <- 0.05
+
+# --- Interpretation output ---
+cat("============================================\n")
+cat("ANOVA INTERPRETATION SUMMARY\n")
+cat("============================================\n")
+cat(sprintf("Significance Level (α): %.2f\n", alpha))
+cat(sprintf("F-statistic: %.3f\n", F_value))
+cat(sprintf("p-value: %.4f\n\n", p_value))
+
+if (p_value < alpha) {
+  cat("Decision: Reject H₀\n")
+  cat("Conclusion: Sand content has a statistically significant effect on mean compression resistance.\n")
+  cat("Interpretation: At least one mean compression strength differs among sand levels.\n")
+} else {
+  cat("Decision: Fail to reject H₀\n")
+  cat("Conclusion: No significant evidence that sand content affects compression resistance.\n")
+}
+cat("============================================\n")
+```
+Q2a
+```{r}
+#  Levene Test (Equal Variance)
+# ============================================
+
+# --- Load required package ---
+# install.packages("car")   # Uncomment this line if 'car' package not installed
+library(car)
+
+# --- Step 1: Create or load dataset ---
+# Replace with your actual data file if available
+df <- data.frame(
+  Percent_Sand = factor(rep(c("10%", "15%", "20%", "25%", "30%"), each = 5)),
+  Compression_Resistance = c(
+    3100, 3200, 3150, 3250, 3180,   # 10%
+    3300, 3350, 3320, 3400, 3370,   # 15%
+    3450, 3480, 3500, 3470, 3520,   # 20%
+    3400, 3380, 3360, 3420, 3390,   # 25%
+    3280, 3300, 3260, 3290, 3310    # 30%
+  )
+)
+
+# --- Step 2: State hypotheses in console ---
+cat("============================================\n")
+cat("Levene Test for Equality of Variances\n")
+cat("============================================\n")
+cat("H0: σ1² = σ2² = σ3² = σ4² = σ5² (All population variances are equal)\n")
+cat("Ha: At least one σi² differs (Variances are not equal)\n")
+cat("Significance Level (α) = 0.05\n\n")
+
+# --- Step 3: Perform the Levene Test ---
+levene_result <- leveneTest(Compression_Resistance ~ Percent_Sand,
+                           data = df,
+                           center = median)
+
+# --- Step 4: Display the result ---
+print(levene_result)
+
+# --- Step 5: Interpret the output automatically ---
+p_value <- levene_result$`Pr(>F)`[1]
+alpha   <- 0.05
+
+cat("\n============================================\n")
+cat("Levene Test Interpretation\n")
+cat("============================================\n")
+cat(sprintf("p-value = %.4f\n", p_value))
+
+if (p_value < alpha) {
+  cat("Decision: Reject H0 → Variances are not equal.\n")
+  cat("Conclusion: The assumption of equal variances is violated.\n")
+} else {
+  cat("Decision: Fail to reject H0 → Variances are equal.\n")
+  cat("Conclusion: The assumption of equal variances is satisfied.\n")
+}
+cat("============================================\n")
+```
+2b
+```{r}
+# ============================================
+# 
+#  Snip of the R Results of the Levene Test
+# ============================================
+
+# --- Step 1: Load package ---
+# install.packages("car")   # Uncomment if not installed
+library(car)
+
+# --- Step 2: Create or import dataset ---
+# You can replace this sample with your actual data
+df <- data.frame(
+  Percent_Sand = factor(rep(c("10%", "15%", "20%", "25%", "30%"), each = 5)),
+  Compression_Resistance = c(3100, 3200, 3150, 3250, 3180,   # 10%
+                             3300, 3350, 3320, 3400, 3370,   # 15%
+                             3450, 3480, 3500, 3470, 3520,   # 20%
+                             3400, 3380, 3360, 3420, 3390,   # 25%
+                             3280, 3300, 3260, 3290, 3310)   # 30%
+)
+
+# --- Step 3: State what we’re doing ---
+cat("============================================\n")
+cat("Part 2, Question 2: Levene Test Results\n")
+cat("============================================\n")
+cat("Objective: Test whether group variances are equal (homogeneity of variances)\n")
+cat("Center = median\n\n")
+
+# --- Step 4: Run the Levene’s Test ---
+levene_result <- leveneTest(Compression_Resistance ~ Percent_Sand,
+                            data = df, center = median)
+
+# --- Step 5: Display the test output (this is your screenshot result) ---
+print(levene_result)
+
+# --- Step 6: Optional (for clarity in your report) ---
+cat("\n============================================\n")
+cat("Notes for Screenshot:\n")
+cat("- Include the section that begins with:\n")
+cat("  'Levene's Test for Homogeneity of Variance (center = median)'\n")
+cat("- Show the Df, F value, and Pr(>F) in your screenshot.\n")
+cat("============================================\n")
+
+```
+2c
+```{r}
+#  Interpretation and Conclusion of Equal Variance
+# ============================================
+
+# --- Step 1: Load package ---
+# install.packages("car")   # Uncomment if not installed
+library(car)
+
+# --- Step 2: Dataset (same as before) ---
+df <- data.frame(
+  Percent_Sand = factor(rep(c("10%", "15%", "20%", "25%", "30%"), each = 5)),
+  Compression_Resistance = c(
+    3100, 3200, 3150, 3250, 3180,   # 10%
+    3300, 3350, 3320, 3400, 3370,   # 15%
+    3450, 3480, 3500, 3470, 3520,   # 20%
+    3400, 3380, 3360, 3420, 3390,   # 25%
+    3280, 3300, 3260, 3290, 3310    # 30%
+  )
+)
+
+# --- Step 3: Run the Levene Test ---
+levene_result <- leveneTest(Compression_Resistance ~ Percent_Sand,
+                           data = df,
+                           center = median)
+
+# --- Step 4: Extract key values ---
+F_value <- levene_result$`F value`[1]
+p_value <- levene_result$`Pr(>F)`[1]
+alpha   <- 0.05
+
+# --- Step 5: Interpretation and Conclusion ---
+cat("============================================\n")
+cat("Part 2, Question 3: Interpretation of Levene Test\n")
+cat("============================================\n")
+cat(sprintf("F-statistic = %.3f\n", F_value))
+cat(sprintf("p-value = %.4f\n", p_value))
+cat(sprintf("Significance Level (α) = %.2f\n\n", alpha))
+
+if (p_value < alpha) {
+  cat("Decision: Reject H₀\n")
+  cat("Conclusion: Variances are NOT equal among the sand levels.\n")
+  cat("→ The equal variance assumption for ANOVA is violated.\n")
+} else {
+  cat("Decision: Fail to reject H₀\n")
+  cat("Conclusion: Variances are equal among the sand levels.\n")
+  cat("→ The equal variance (homogeneity) assumption for ANOVA is satisfied.\n")
+}
+cat("============================================\n")
+```
+2d
+```{r}
+#  QQ Plot of Residuals
+# ============================================
+
+# --- Step 1: Load packages (if not already) ---
+# install.packages("car")     # Uncomment if needed
+library(car)
+
+# --- Step 2: Create or import dataset ---
+df <- data.frame(
+  Percent_Sand = factor(rep(c("10%", "15%", "20%", "25%", "30%"), each = 5)),
+  Compression_Resistance = c(
+    3100, 3200, 3150, 3250, 3180,   # 10%
+    3300, 3350, 3320, 3400, 3370,   # 15%
+    3450, 3480, 3500, 3470, 3520,   # 20%
+    3400, 3380, 3360, 3420, 3390,   # 25%
+    3280, 3300, 3260, 3290, 3310    # 30%
+  )
+)
+
+# --- Step 3: Fit ANOVA model ---
+anova_model <- aov(Compression_Resistance ~ Percent_Sand, data = df)
+
+# --- Step 4: Extract residuals ---
+residuals_anova <- residuals(anova_model)
+
+# --- Step 5: Create QQ Plot ---
+qqnorm(residuals_anova,
+       main = "QQ Plot of ANOVA Residuals",
+       pch  = 19,
+       col  = "blue")
+qqline(residuals_anova,
+       col = "red",
+       lwd = 2)
+
+# --- Step 6: Optional – add subtitle for screenshot ---
+title(sub = "If points follow the line → residuals are approximately normal")
+```
+1e
+```{r}
+# 
+#  Shapiro–Wilk Normality Test (State Hypotheses)
+# ============================================
+
+# --- Step 1: Load packages ---
+# install.packages("car")  # Uncomment if not installed
+library(car)
+
+# --- Step 2: Create or import dataset ---
+df <- data.frame(
+  Percent_Sand = factor(rep(c("10%", "15%", "20%", "25%", "30%"), each = 5)),
+  Compression_Resistance = c(
+    3100, 3200, 3150, 3250, 3180,   # 10%
+    3300, 3350, 3320, 3400, 3370,   # 15%
+    3450, 3480, 3500, 3470, 3520,   # 20%
+    3400, 3380, 3360, 3420, 3390,   # 25%
+    3280, 3300, 3260, 3290, 3310    # 30%
+  )
+)
+
+# --- Step 3: Fit ANOVA model ---
+anova_model <- aov(Compression_Resistance ~ Percent_Sand, data = df)
+
+# --- Step 4: Extract residuals ---
+residuals_anova <- residuals(anova_model)
+
+# --- Step 5: State Hypotheses in Console ---
+cat("============================================\n")
+cat("Part 2, Question 5: Shapiro–Wilk Normality Test\n")
+cat("============================================\n")
+cat("H0: Residuals are normally distributed (ε_i ~ N(0, σ²))\n")
+cat("Ha: Residuals are NOT normally distributed\n")
+cat("Significance Level (α) = 0.05\n\n")
+
+# --- Step 6: Run Shapiro–Wilk Test ---
+shapiro_result <- shapiro.test(residuals_anova)
+print(shapiro_result)
+```
+1f
+```{r}
+# Snip of Shapiro–Wilk Test Results
+# ============================================
+
+# --- Step 1: Load packages ---
+# install.packages("car")  # Uncomment if not installed
+library(car)
+
+# --- Step 2: Create or import dataset ---
+df <- data.frame(
+  Percent_Sand = factor(rep(c("10%", "15%", "20%", "25%", "30%"), each = 5)),
+  Compression_Resistance = c(
+    3100, 3200, 3150, 3250, 3180,   # 10%
+    3300, 3350, 3320, 3400, 3370,   # 15%
+    3450, 3480, 3500, 3470, 3520,   # 20%
+    3400, 3380, 3360, 3420, 3390,   # 25%
+    3280, 3300, 3260, 3290, 3310    # 30%
+  )
+)
+
+# --- Step 3: Fit ANOVA model ---
+anova_model <- aov(Compression_Resistance ~ Percent_Sand, data = df)
+
+# --- Step 4: Extract residuals ---
+residuals_anova <- residuals(anova_model)
+
+# --- Step 5: Run Shapiro–Wilk Test (for normality) ---
+cat("============================================\n")
+cat("Part 2, Question 6: Shapiro–Wilk Test Results\n")
+cat("============================================\n")
+shapiro_result <- shapiro.test(residuals_anova)
+print(shapiro_result)
+
+# --- Step 6: Reminder for Screenshot ---
+cat("\n============================================\n")
+cat("NOTE:\n")
+cat("- Take a screenshot of the output lines below that start with:\n")
+cat("  'Shapiro-Wilk normality test'\n")
+cat("- Include the W statistic and p-value in your snip.\n")
+cat("============================================\n")
+```
+2g
+```{r}
+# -------------------------------------------------
+#  Normality check for ANOVA residuals
+# -------------------------------------------------
+
+# ----- 1. Packages -------------------------------------------------
+# install.packages("car")   # uncomment if you haven't installed it yet
+library(car)
+
+# ----- 2. Data ----------------------------------------------------
+# Replace the data frame below with your own import, e.g.
+# df <- read.csv("your_file.csv", stringsAsFactors = FALSE)
+
+df <- data.frame(
+  Percent_Sand = factor(rep(c("10%", "15%", "20%", "25%", "30%"), each = 5)),
+  Compression_Resistance = c(
+    3100, 3200, 3150, 3250, 3180,   # 10%
+    3300, 3350, 3320, 3400, 3370,   # 15%
+    3450, 3480, 3500, 3470, 3520,   # 20%
+    3400, 3380, 3360, 3420, 3390,   # 25%
+    3280, 3300, 3260, 3290, 3310    # 30%
+  )
+)
+
+# ----- 3. Fit one‑way ANOVA ----------------------------------------
+anova_model <- aov(Compression_Resistance ~ Percent_Sand, data = df)
+
+# ----- 4. Extract residuals ----------------------------------------
+residuals_anova <- residuals(anova_model)
+
+# ----- 5. Shapiro‑Wilk test ---------------------------------------
+cat("============================================\n")
+cat("Shapiro–Wilk Normality Test (Residuals)\n")
+cat("============================================\n")
+shapiro_res <- shapiro.test(residuals_anova)
+print(shapiro_res)
+
+# ----- 6. Automatic interpretation ---------------------------------
+alpha <- 0.05
+cat("\nInterpretation:\n")
+if (shapiro_res$p.value < alpha) {
+  cat(sprintf("p‑value = %.4f < %.2f → Reject H₀.\n",
+              shapiro_res$p.value, alpha))
+  cat("Conclusion: Residuals are NOT normally distributed.\n")
+  cat("Implication: The normality assumption for ANOVA is violated.\n")
+} else {
+  cat(sprintf("p‑value = %.4f ≥ %.2f → Fail to reject H₀.\n",
+              shapiro_res$p.value, alpha))
+  cat("Conclusion: Residuals are approximately normal.\n")
+  cat("Implication: The normality assumption for ANOVA is satisfied.\n")
+}
+cat("============================================\n")
+```
+2h
+```{r}
+# ============================================
+#  Final Conclusion of Overall ANOVA Test
+# ============================================
+
+# --- Step 1: Load package ---
+# install.packages("car")    # Uncomment if not installed
+library(car)
+
+# --- Step 2: Create or import dataset ---
+df <- data.frame(
+  Percent_Sand = factor(rep(c("10%", "15%", "20%", "25%", "30%"), each = 5)),
+  Compression_Resistance = c(3100, 3200, 3150, 3250, 3180,   # 10%
+                             3300, 3350, 3320, 3400, 3370,   # 15%
+                             3450, 3480, 3500, 3470, 3520,   # 20%
+                             3400, 3380, 3360, 3420, 3390,   # 25%
+                             3280, 3300, 3260, 3290, 3310)   # 30%
+)
+
+# --- Step 3: Fit ANOVA model ---
+anova_model <- aov(Compression_Resistance ~ Percent_Sand, data = df)
+
+# --- Step 4: Run assumption checks ---
+# 4a. Levene Test (Equal Variances)
+levene_result <- leveneTest(Compression_Resistance ~ Percent_Sand, data = df, center = median)
+
+# 4b. Shapiro–Wilk Test (Normality)
+shapiro_result <- shapiro.test(residuals(anova_model))
+
+# --- Step 5: Extract key statistics ---
+anova_summary <- summary(anova_model)[[1]]
+F_value <- anova_summary[["F value"]][1]
+p_value_anova <- anova_summary[["Pr(>F)"]][1]
+p_value_levene <- levene_result$`Pr(>F)`[1]
+p_value_shapiro <- shapiro_result$p.value
+alpha <- 0.05
+
+# --- Step 6: Print overall conclusion ---
+cat("============================================\n")
+cat("Part 2, Question 8: Final Conclusion of Overall ANOVA Test\n")
+cat("============================================\n")
+
+cat(sprintf("Significance Level (α): %.2f\n", alpha))
+cat(sprintf("Levene Test p-value: %.4f\n", p_value_levene))
+cat(sprintf("Shapiro–Wilk Test p-value: %.4f\n", p_value_shapiro))
+cat(sprintf("ANOVA F-Statistic: %.3f\n", F_value))
+cat(sprintf("ANOVA p-value: %.4f\n\n", p_value_anova))
+
+# --- Step 7: Logical interpretation ---
+if (p_value_levene > alpha & p_value_shapiro > alpha & p_value_anova < alpha) {
+  cat("✅ All assumptions are satisfied (equal variances and normality confirmed).\n")
+  cat("✅ ANOVA test is significant (p < 0.05).\n")
+  cat("Conclusion: Reject H₀ → Sand content significantly affects mean compression resistance.\n")
+  cat("At least one sand percentage produces a different mean compression resistance.\n")
+  cat("ANOVA results are valid and reliable.\n")
+} else if (p_value_anova >= alpha) {
+  cat("❌ ANOVA not significant (p ≥ 0.05) → Fail to reject H₀.\n")
+  cat("Conclusion: No significant difference among mean compression resistances.\n")
+} else {
+  cat("⚠️ One or more assumptions violated — interpret results with caution.\n")
+}
+cat("============================================\n")
+
+```
+
